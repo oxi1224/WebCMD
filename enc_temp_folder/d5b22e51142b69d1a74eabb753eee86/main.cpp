@@ -1,6 +1,5 @@
 #include <iostream>
 #include <stdio.h>
-#include <algorithm>
 #include <fstream>
 #include "./http/http.hpp"
 

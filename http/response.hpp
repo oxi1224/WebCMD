@@ -75,7 +75,7 @@ namespace http {
 
 	class Response {
 	public:
-		void setStatusCode(int code) {
+		void setStatus(int code) {
 			auto kvp = StatusCodes.find(code);
 			if (kvp == StatusCodes.end()) {
 				std::cerr << "INVALID STATUS CODE SPECIFICED" << std::endl;
@@ -100,11 +100,10 @@ namespace http {
 			res << "HTTP/1.1 " << m_statusCode << " " << m_statusText << std::endl;
 			res << "Date: " << date << std::endl;
 			for (const auto &kvp : m_headers) {
-				res << kvp.first << ": " << kvp.second;
+				res << kvp.first << ": " << kvp.second << std::endl;
 			}
 			res << std::endl;
 			res << m_body << std::endl;
-
 			return res.str();
 		}
 

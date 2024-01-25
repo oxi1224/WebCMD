@@ -12,12 +12,12 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-const int BUFF_SIZE = 512;
+const int BUFF_SIZE = 1024;
 
 namespace http {
 	using namespace http;
 	
-	typedef std::function<void(Request&, Response&)> Callback;
+	typedef std::function<void(Request*, Response*)> Callback;
 		
 	struct PathListener {
 		std::string path;
@@ -92,26 +92,17 @@ namespace http {
 					std::cout << "Connection rejected" << std::endl;
 					continue;
 				}
-
 				char requestBuffer[BUFF_SIZE] = {};
 				int receivedBytes = recv(m_clientSock, requestBuffer, sizeof(requestBuffer), 0);
 				Request req = Request(std::string(requestBuffer));
-				// char dateStr[512];
-				// time_t now = time(0);
-				// struct tm tm = *gmtime(&now);
-				// strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", &tm);
-				// 
-				// std::ostringstream res;
-				// res << "HTTP/1.1 200 OK" << std::endl;
-				// res << "Date: " << dateStr << std::endl;
-				// res << "Server: " << "TestServer" << std::endl;
-				// res << "Content-type: text/html" << std::endl;
-				// res << std::endl;
-				// res << "<!DOCTYPE html><html><head><title>HELLO WORLD</title></head><body>HELLO FROM RESPONSE<h1>RESPONSE IS OK</h1></body></html>" << std::endl;
-				// std::string stringRes = res.str();
-				// std::cout << stringRes;
-				// 
-				// send(m_clientSock, stringRes.c_str(), stringRes.size(), 0);
+				Response res = Response();
+				for (PathListener data : m_listeners) {
+					if (req.path == data.path && req.method == data.method) {
+						data.callback(&req, &res);
+					}
+				}
+				std::string stringRes = res.toString();
+				send(m_clientSock, stringRes.c_str(), stringRes.size(), 0);
 				closesocket(m_clientSock);
 			}
 		}

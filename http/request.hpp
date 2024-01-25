@@ -39,8 +39,8 @@ namespace http {
 
 			// get headers
 			while (std::getline(stream, line) && !line.empty()) {
-				if (!line.empty() && line.back() == '\r') {
-					line.pop_back();
+				if (line.empty() || line == "\r") {
+					break;
 				}
 				std::istringstream lineStream(line);
 				std::string header, value;
@@ -49,7 +49,13 @@ namespace http {
 					m_headers[header] = value;
 				}
 			}
-			m_body = stream.str();
+
+			std::string body;
+			while (std::getline(stream, line)) {
+				body += line + "\n";
+			}
+			body.erase(body.find_last_of("\n"));
+			m_body = body;
 		}
 
 		std::string getHeader(std::string header) {
