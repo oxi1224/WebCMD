@@ -46,6 +46,11 @@ namespace http {
 				std::string header, value;
 				if (std::getline(lineStream, header, ':') && std::getline(lineStream, value)) {
 					value.erase(value.find_first_of(' '), 1);
+					if (header == "Cookie") {
+						std::cout << "cookies" << std::endl;
+						parseCookies(value);
+						continue;
+					}
 					m_headers[header] = value;
 				}
 			}
@@ -54,7 +59,10 @@ namespace http {
 			while (std::getline(stream, line)) {
 				body += line + "\n";
 			}
-			body.erase(body.find_last_of("\n"));
+			size_t lastNewLine = body.find_last_of("\n");
+			if (lastNewLine != std::string::npos) {
+				body.erase(lastNewLine);
+			}
 			m_body = body;
 		}
 
@@ -74,6 +82,14 @@ namespace http {
 			return entry->second;
 		}
 
+		std::string getCookie(std::string cookie) {
+			auto entry = m_cookies.find(cookie);
+			if (entry == m_cookies.end()) {
+				return "";
+			}
+			return entry->second;
+		}
+
 		std::string getBody() {
 			return m_body;
 		}
@@ -86,11 +102,20 @@ namespace http {
 			}
 		}
 
+		void parseCookies(std::string rawCookies) {
+			std::istringstream lineStream(rawCookies);
+			std::string key, val;
+			while (std::getline(lineStream, key, '=') && std::getline(lineStream, val, ';')) {
+				m_cookies[key] = val;
+			}
+		}
+
 		std::string m_rawRequest;
 		std::string m_httpVersion;
 		std::string m_body;
 		std::map<std::string, std::string> m_params{};
 		std::map<std::string, std::string> m_headers{};
+		std::map<std::string, std::string> m_cookies{};
 	};
 }
 #endif

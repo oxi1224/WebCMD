@@ -9,6 +9,7 @@
 #include <vector>
 #include "response.hpp"
 #include "request.hpp"
+#include "cookie.hpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -92,6 +93,7 @@ namespace http {
 					std::cout << "Connection rejected" << std::endl;
 					continue;
 				}
+				
 				char requestBuffer[BUFF_SIZE] = {};
 				int receivedBytes = recv(m_clientSock, requestBuffer, sizeof(requestBuffer), 0);
 				Request req = Request(std::string(requestBuffer));

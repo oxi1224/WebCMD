@@ -1,10 +1,22 @@
 #include <iostream>
 #include <stdio.h>
-#include <algorithm>
+#include <vector>
 #include <fstream>
+#include <random>
+#include <time.h>
 #include "./http/http.hpp"
+#include "./util.hpp"
+
+using namespace Util;
 
 const std::string OUT_FILE = "out.temp";
+std::map<std::string, std::string> ENV{};
+
+struct VerifiedUUID {
+	std::string uuid;
+	long int expireTime;
+};
+std::vector<VerifiedUUID> uuids{};
 
 static std::string exec(std::string command) {
 	std::string fullCmd = command + " > " + OUT_FILE;
@@ -19,22 +31,73 @@ static std::string exec(std::string command) {
 }
 
 int main() {
+	loadEnv(&ENV);
 	http::Server srv = http::Server("0.0.0.0", 4003);
 
 	srv.assign(
 		"/exec",
 		"POST",
 		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (uuid.empty()) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
 			std::string body = req->getBody();
 			std::string out = exec(body);
-
 			res->setStatus(200);
 			res->setContent(
 				out,
 				"text/plain"
 			);
-			res->setHeader("Access-Control-Allow-Origin", "*");
 		}
 	);
+
+	srv.assign(
+		"/login",
+		"POST",
+		[](http::Request* req, http::Response* res) {
+			std::string body = req->getBody();
+			std::istringstream stream(body);
+			std::string login, password;
+			std::getline(stream, login);
+			std::getline(stream, password);
+			
+			std::string resContent = "";
+			if (login != ENV["WEB_LOGIN"] || password != ENV["WEB_PASSWD"]) {
+				res->setStatus(401);
+				resContent = "Invalid credentials";
+			} else {
+				res->setStatus(200);
+				std::string uuid = getUUID();
+				http::Cookie uuidCookie;
+				uuidCookie.name = "id";
+				uuidCookie.value = uuid;
+				uuidCookie.path = "/";
+				uuidCookie.sameSite = "Strict";
+				uuidCookie.httpOnly = true;
+				uuidCookie.setExpiryTime(3600);
+				res->addCookie(uuidCookie.toString());
+
+				VerifiedUUID data;
+				data.uuid = uuid;
+				time_t now = time(0);
+				time_t offsetTime = now + 3600;
+				data.expireTime = (long int)time(&offsetTime);
+				uuids.push_back(data);
+			}
+			res->setContent(resContent, "text/plain");
+		}
+	);
+
+	srv.assign(
+		"/",
+		"GET",
+		[](http::Request* req, http::Response* res) {
+			res->setContent("<!DOCTYPE html><head><title>Hello!</title><body><h1>Welcome!</h1></body></head>", "text/html");
+		}
+	);
+
 	srv.start();
 }

@@ -78,8 +78,8 @@ namespace http {
 		void setStatus(int code) {
 			auto kvp = StatusCodes.find(code);
 			if (kvp == StatusCodes.end()) {
-				std::cerr << "INVALID STATUS CODE SPECIFICED" << std::endl;
-				exit(1);
+				std::cerr << "Invalid response status code provided" << std::endl;
+				std::runtime_error("Invalid response status code provided");
 			}
 			m_statusCode = kvp->first;
 			m_statusText = kvp->second;
@@ -94,6 +94,10 @@ namespace http {
 			m_headers["Content-type"] = contentType;
 		}
 
+		void addCookie(std::string cookie) {
+			m_cookies.push_back(cookie);
+		}
+
 		std::string toString() {
 			std::string date = getTimeStamp();
 			std::ostringstream res;
@@ -101,6 +105,9 @@ namespace http {
 			res << "Date: " << date << std::endl;
 			for (const auto &kvp : m_headers) {
 				res << kvp.first << ": " << kvp.second << std::endl;
+			}
+			for (std::string cookie : m_cookies) {
+				res << "Set-Cookie: " << cookie << std::endl;
 			}
 			res << std::endl;
 			res << m_body << std::endl;
@@ -120,6 +127,7 @@ namespace http {
 		std::string m_statusText;
 		std::map<std::string, std::string> m_headers{};
 		std::string m_body = "";
+		std::vector<std::string> m_cookies{};
 	};
 }
 
