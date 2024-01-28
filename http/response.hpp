@@ -79,7 +79,8 @@ namespace http {
 			auto kvp = StatusCodes.find(code);
 			if (kvp == StatusCodes.end()) {
 				std::cerr << "Invalid response status code provided" << std::endl;
-				std::runtime_error("Invalid response status code provided");
+				std::runtime_error err("Invalid response status code provided");
+				throw err;
 			}
 			m_statusCode = kvp->first;
 			m_statusText = kvp->second;
@@ -123,8 +124,8 @@ namespace http {
 			return dateStr;
 		}
 
-		int m_statusCode;
-		std::string m_statusText;
+		int m_statusCode = 404;
+		std::string m_statusText = "Not Found";
 		std::map<std::string, std::string> m_headers{};
 		std::string m_body = "";
 		std::vector<std::string> m_cookies{};

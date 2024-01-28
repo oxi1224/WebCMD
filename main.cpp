@@ -33,7 +33,7 @@ static std::string exec(std::string command) {
 int main() {
 	loadEnv(&ENV);
 	http::Server srv = http::Server("0.0.0.0", 4003);
-
+	srv.setStaticFolderPath("C:/Users/oxi12/Desktop/WebCMD/static");
 	srv.assign(
 		"/exec",
 		"POST",
@@ -88,14 +88,6 @@ int main() {
 				uuids.push_back(data);
 			}
 			res->setContent(resContent, "text/plain");
-		}
-	);
-
-	srv.assign(
-		"/",
-		"GET",
-		[](http::Request* req, http::Response* res) {
-			res->setContent("<!DOCTYPE html><head><title>Hello!</title><body><h1>Welcome!</h1></body></head>", "text/html");
 		}
 	);
 

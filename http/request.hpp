@@ -55,6 +55,7 @@ namespace http {
 				}
 			}
 
+			// get body
 			std::string body;
 			while (std::getline(stream, line)) {
 				body += line + "\n";

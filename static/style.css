@@ -1,0 +1,28 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: chocolate;
+  width: 100vw;
+  height: 100vh;
+}
+
+button {
+  font-size: 50px;
+  padding: 2.5rem 5rem;
+  border: 1px solid brown;
+  background-color: coral;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: .5rem;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(110%);
+}
