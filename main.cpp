@@ -30,9 +30,14 @@ static std::string exec(std::string command) {
 	return content;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 	loadEnv(&ENV);
-	http::Server srv = http::Server("0.0.0.0", 4003);
+	bool isDevEnv = false;
+	if (argc > 1 && strcmp(argv[1], "--dev") == 0) {
+		isDevEnv = true;
+		http::util::log("Using dev environment");
+	}
+	http::Server srv = http::Server("0.0.0.0", 4003, isDevEnv);
 	srv.setStaticFolderPath("C:/Users/oxi12/Desktop/WebCMD/static");
 	srv.assign(
 		"/exec",

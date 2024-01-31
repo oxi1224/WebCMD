@@ -111,7 +111,7 @@ namespace http {
 				res << "Set-Cookie: " << cookie << std::endl;
 			}
 			res << std::endl;
-			res << m_body << std::endl;
+			res << m_body;
 			return res.str();
 		}
 

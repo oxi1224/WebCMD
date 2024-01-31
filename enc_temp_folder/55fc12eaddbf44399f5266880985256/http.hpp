@@ -200,7 +200,7 @@ namespace http {
 						methodEntry->second(&req, &res);
 					}
 				}
-				
+				// implement ping/pong connection between server/client, if response time > 100ms close connection
 				std::string stringRes = res.toString();
 				send(m_clientSock, stringRes.c_str(), stringRes.size(), 0);
 				closesocket(m_clientSock);
@@ -224,6 +224,7 @@ namespace http {
 					assignPath = relativePath.substr(0, lastSlashPos + 1);
 				}
 
+				std::cout << assignPath << std::endl;
 				assign(
 					assignPath,
 					"GET",
