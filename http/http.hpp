@@ -28,12 +28,6 @@ namespace http {
 	typedef std::function<void(Request*, Response*)> Callback;
 	typedef std::map<std::string, std::map<std::string, Callback>> ListenerMap;
 
-	// struct PathListener {
-	//	std::string path;
-	//	std::string method;
-	//	Callback callback;
-	// };
-
 	std::map<std::string, std::string> mimeTypes{
 		{".aac", "audio/aac"},
 		{".abw", "application/x-abiword"},
