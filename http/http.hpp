@@ -10,6 +10,7 @@
 #include <map>
 #include <filesystem>
 #include <fstream>
+#include <bitset>
 #include "response.hpp"
 #include "request.hpp"
 #include "cookie.hpp"
@@ -24,7 +25,6 @@ namespace fs = std::filesystem;
 namespace http {
 	using namespace http;
 	using namespace http::util;
-
 	typedef std::function<void(Request*, Response*)> Callback;
 	typedef std::map<std::string, std::map<std::string, Callback>> ListenerMap;
 
@@ -169,6 +169,15 @@ namespace http {
 			}
 		}
 
+		void addIntercept(std::string path, std::string method, Callback callback) {
+			auto pathEntry = m_intercepts.find(path);
+			if (pathEntry == m_intercepts.end()) {
+				m_intercepts[path] = std::map<std::string, Callback>{ {method, callback} };
+			} else {
+				pathEntry->second[method] = callback;
+			}
+		}
+
 		void setStaticFolderPath(std::string path) {
 			m_staticPath = path;
 		}
@@ -194,6 +203,14 @@ namespace http {
 						methodEntry->second(&req, &res);
 					}
 				}
+
+				auto interceptPathEntry = m_intercepts.find(req.path);
+				if (interceptPathEntry != m_intercepts.end()) {
+					auto interceptMethodEntry = interceptPathEntry->second.find(req.method);
+					if (interceptMethodEntry != interceptPathEntry->second.end()) {
+						interceptMethodEntry->second(&req, &res);
+					}
+				}
 				
 				std::string stringRes = res.toString();
 				send(m_clientSock, stringRes.c_str(), stringRes.size(), 0);
@@ -203,7 +220,15 @@ namespace http {
 
 		void loadStatic() {
 			if (m_staticPath.empty()) return;
-			for (const auto& entry : fs::recursive_directory_iterator(m_staticPath)) {
+			bool dirExists = fs::exists(m_staticPath);
+			if (!dirExists) {
+				log("Provided static directory path does not exist. (" + m_staticPath + ")", true);
+				log("Consider using an absolute path or make sure the path is correct.", true);
+				exit(1);
+			}
+
+			fs::recursive_directory_iterator staticIter(m_staticPath);
+			for (const auto& entry : staticIter) {
 				if (entry.is_directory()) {
 					continue;
 				}
@@ -218,22 +243,34 @@ namespace http {
 					assignPath = relativePath.substr(0, lastSlashPos + 1);
 				}
 
+				std::string lastChar(1, assignPath[assignPath.length() - 1]);
+				if (lastChar == "/") {
+					assign(
+						assignPath.substr(0, assignPath.length() - 1),
+						"GET",
+						[assignPath](http::Request* req, http::Response* res) {
+							res->setStatus(301);
+							res->setHeader("Location", assignPath);
+						}
+					);
+				}
+
 				assign(
 					assignPath,
 					"GET",
 					[&s_dev = s_dev, stringPath](http::Request* req, http::Response* res) {
-						std::ifstream file(stringPath);
+						std::ifstream file(stringPath, std::ios::binary);
 						std::string content;
 						content.assign(
 							(std::istreambuf_iterator<char>(file)),
 							(std::istreambuf_iterator<char>())
 						);
 						size_t extensionPos = stringPath.find_last_of(".");
-						std::string extension = stringPath.substr(extensionPos);
+            std::string extension = stringPath.substr(extensionPos);
 						auto mimeEntry = mimeTypes.find(extension);
 						res->setStatus(500);
 						if (mimeEntry != mimeTypes.end()) {
-							res->setStatus(200);
+              res->setStatus(200);
 							if (s_dev && (extension == ".html" || extension == ".htm")) {
 								size_t bodyEndPos = content.find("</body>");
 								if (bodyEndPos != std::string::npos) {
@@ -261,7 +298,6 @@ namespace http {
 								if (i >= m_fileSizes.size()) {
 									m_fileSizes.push_back(fileSize);
 								} else if (m_fileSizes[i] != fileSize) {
-									std::cout << "size changed" << std::endl;
 									res->setContent("true", "text/plain");
 									m_fileSizes[i] = fileSize;
 									loadStatic();
@@ -281,6 +317,7 @@ namespace http {
 		sockaddr_in m_sockAddress{};
 		unsigned int m_sockAddressLen{};
 		ListenerMap m_listeners{};
+		ListenerMap m_intercepts{};
 		std::string m_staticPath = "";
 		std::vector<unsigned int> m_fileSizes{};
 	};

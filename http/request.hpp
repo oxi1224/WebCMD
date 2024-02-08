@@ -47,7 +47,6 @@ namespace http {
 				if (std::getline(lineStream, header, ':') && std::getline(lineStream, value)) {
 					value.erase(value.find_first_of(' '), 1);
 					if (header == "Cookie") {
-						std::cout << "cookies" << std::endl;
 						parseCookies(value);
 						continue;
 					}
@@ -99,6 +98,8 @@ namespace http {
 			std::istringstream lineStream(rawParams);
 			std::string key, val;
 			while (std::getline(lineStream, key, '=') && std::getline(lineStream, val, '&')) {
+				key.erase(0, key.find_first_not_of(" \t\r\n"));
+				val.erase(val.find_last_not_of(" \t\r\n") + 1);
 				m_params[key] = val;
 			}
 		}
@@ -107,6 +108,8 @@ namespace http {
 			std::istringstream lineStream(rawCookies);
 			std::string key, val;
 			while (std::getline(lineStream, key, '=') && std::getline(lineStream, val, ';')) {
+				key.erase(0, key.find_first_not_of(" \t\r\n"));
+				val.erase(val.find_last_not_of(" \t\r\n") + 1);
 				m_cookies[key] = val;
 			}
 		}

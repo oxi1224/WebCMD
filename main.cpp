@@ -1,8 +1,10 @@
 #include <iostream>
 #include <vector>
+#include <map>
 #include <fstream>
 #include <random>
 #include <time.h>
+#include <algorithm>
 #include "./http/http.hpp"
 #include "./util.hpp"
 
@@ -17,8 +19,11 @@ struct VerifiedUUID {
 };
 std::vector<VerifiedUUID> uuids{};
 
+std::map<int, std::map<std::string, std::string>> terminals{};
+int terminalCount = 0;
+
 static std::string exec(std::string command) {
-	std::string fullCmd = command + " > " + OUT_FILE;
+	std::string fullCmd = command + " > " + OUT_FILE + " 2>&1";
 	std::system(fullCmd.c_str());
 	std::ifstream out(OUT_FILE);
 	std::string content;
@@ -29,37 +34,97 @@ static std::string exec(std::string command) {
 	return content;
 }
 
+static bool isAuthorized(std::string uuid) {
+	if (uuid.empty()) {
+		return false;
+	}
+	for (int i = 0; i < uuids.size(); i++) {
+		VerifiedUUID data = uuids[i];
+		if (data.uuid != uuid) {
+			continue;
+		}
+		std::time_t now = std::time(0);
+		if (now > data.expireTime) {
+			uuids.erase(uuids.begin() + i);
+			return false;
+		} else {
+			return true;
+		}
+	}
+	return false;
+}
+
+static std::string ReplaceAll(std::string& str, const std::string& from, const std::string& to) {
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+	}
+	return str;
+}
+
+static std::string sanitize(std::string string) {
+	ReplaceAll(string, "\\", "\\\\"); // backslash
+	ReplaceAll(string, "\n", "\\n");	// new-line
+	ReplaceAll(string, "\r", "\\r");	// carriage return
+	ReplaceAll(string, "\t", "\\t");	// tab
+	ReplaceAll(string, "\"", "\\\""); // quote
+	return string;
+}
+
 int main(int argc, char* argv[]) {
 	loadEnv(&ENV);
+	std::string staticPath = "./static";
 	bool isDevEnv = false;
-	if (argc > 1 && strcmp(argv[1], "--dev") == 0) {
-		isDevEnv = true;
-		http::util::log("Using dev environment");
+
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "--dev") == 0) {
+			isDevEnv = true;
+			http::util::log("Using dev environment");
+		}
+		if (strcmp(argv[i], "--staticPath") == 0 && (i + 1) < argc) {
+			staticPath = argv[i + 1];
+			i += 1;
+			http::util::log("Changed default path to: " + staticPath);
+		}
 	}
+
 	http::Server srv = http::Server("0.0.0.0", 4003, isDevEnv);
-	srv.setStaticFolderPath("C:/Users/oxi12/Desktop/WebCMD/static");
+	srv.setStaticFolderPath(staticPath);
+
 	srv.assign(
-		"/exec",
+		"/api/exec",
 		"POST",
 		[](http::Request* req, http::Response* res) {
 			std::string uuid = req->getCookie("id");
-			if (uuid.empty()) {
+			if (!isAuthorized(uuid)) {
 				res->setStatus(401);
 				res->setContent("Unauthorized", "text/plain");
 				return;
 			}
 			std::string body = req->getBody();
-			std::string out = exec(body);
-			res->setStatus(200);
-			res->setContent(
-				out,
-				"text/plain"
-			);
+			std::istringstream stream(body);
+			std::string stringTerminalId, command;
+			std::getline(stream, stringTerminalId);
+			std::getline(stream, command);
+			int terminalId = std::stoi(stringTerminalId);
+			auto entry = terminals.find(terminalId);
+			if (entry == terminals.end()) {
+				res->setStatus(400);
+			} else {
+				std::string out = exec(command);
+				entry->second[command] = out;
+				res->setStatus(200);
+				res->setContent(
+					out,
+					"text/plain"
+				);
+			}
 		}
 	);
 
 	srv.assign(
-		"/login",
+		"/api/login",
 		"POST",
 		[](http::Request* req, http::Response* res) {
 			std::string body = req->getBody();
@@ -87,11 +152,129 @@ int main(int argc, char* argv[]) {
 				VerifiedUUID data;
 				data.uuid = uuid;
 				time_t now = time(0);
-				time_t offsetTime = now + 3600;
-				data.expireTime = (long int)time(&offsetTime);
+				long int offsetTime = now + 3600;
+				data.expireTime = offsetTime;
 				uuids.push_back(data);
 			}
 			res->setContent(resContent, "text/plain");
+		}
+	);
+
+	srv.assign(
+		"/api/createTerminal",
+		"POST",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
+			terminals[terminalCount] = std::map<std::string, std::string>{};
+			res->setStatus(200);
+			res->setContent(std::to_string(terminalCount), "text/plain");
+			terminalCount += 1;
+		}
+	);
+
+	srv.assign(
+		"/api/closeTerminal",
+		"POST",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
+			int terminalId = std::stoi(req->getBody());
+			terminals.erase(terminalId);
+			res->setStatus(200);
+		}
+	);
+
+	srv.assign(
+		"/api/getTerminal",
+		"GET",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
+			std::string stringId = req->getParam("id");
+			int id = std::stoi(stringId);
+			auto entry = terminals.find(id);
+			if (entry == terminals.end()) {
+				res->setStatus(404);
+			} else {
+				std::ostringstream out;
+				out << "[";
+				for (auto const& cmdEntry : entry->second) {
+					std::string cmdOut = sanitize(cmdEntry.second);
+					out << "[\"" << cmdEntry.first << "\", ";
+					out << "\"" << cmdOut << "\"" << "], ";
+				}
+				out << "]";
+				std::string stringOut = out.str();
+				size_t lastComma = stringOut.find_last_of(',');
+				if (lastComma != std::string::npos) {
+					stringOut.erase(lastComma, 1);
+				}
+				res->setStatus(200);
+				res->setContent(stringOut, "application/json");
+			}
+		}
+	);
+
+	srv.assign(
+		"/api/getTerminalIDs",
+		"GET",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
+			std::ostringstream out;
+			out << "[";
+			for (const auto& terminal : terminals) {
+				out << terminal.first << ", ";
+			}
+			out << "]";
+			std::string outString = out.str();
+			size_t lastComma = outString.find_last_of(',');
+			if (lastComma != std::string::npos) {
+				outString.erase(lastComma, 1);
+			}
+			res->setStatus(200);
+			res->setContent(outString, "application/json");
+		}
+	);
+	
+	srv.addIntercept(
+		"/",
+		"GET",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(303);
+				res->setHeader("Location", "/login/");
+			}
+		}
+	);
+
+	srv.addIntercept(
+		"/login/",
+		"GET",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (isAuthorized(uuid)) {
+				res->setStatus(303);
+				res->setHeader("Location", "/");
+			}
 		}
 	);
 

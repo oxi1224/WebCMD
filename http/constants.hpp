@@ -19,7 +19,7 @@ namespace http {
     const url = window.location.origin + "/dev/check-refresh";
     try {
       await fetchStatus();
-      setInterval(async () => await fetchStatus(), 1000);
+      setInterval(async () => await fetchStatus(), 2500);
     } catch (e) { }
   })();
 </script>

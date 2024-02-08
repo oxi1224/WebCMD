@@ -1,28 +1,268 @@
+@font-face {
+  font-family: Windows-Cmd;
+  src: url("./assets/windows_command_prompt.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --dark: #11121c;
+  --accent: #f8c579;
+  --light-blue: #889fb5;
+  --bg: #222435;
+  --bg-dark: #1d212d;
+  --bg-accent: #27293a;
+  --text: #80838c;
+  --white: #cacaca;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  background-color: chocolate;
-  width: 100vw;
-  height: 100vh;
+  font-family: Windows-Cmd;
+  background-color: #0c0e13;
 }
 
-button {
-  font-size: 50px;
-  padding: 2.5rem 5rem;
-  border: 1px solid brown;
-  background-color: coral;
+.console {
+  background-color: var(--bg);
+  color: var(--text);
+  position: relative;
+  border: 1px solid var(--white);
+  width: 980px;
+  height: 450px;
+  overflow: hidden;
+}
+
+.input-bar {
+  background-color: var(--bg-dark);
+  display: flex;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+}
+
+/* https://www.google.com/url?sa=i&url=https%3A%2F%2Flevelup.gitconnected.com%2Fthe-most-requested-neovim-configuration-33a8fc4eed56&psig=AOvVaw0Db6Xx05dEliS2evVK1L2b&ust=1706967444174000&source=images&cd=vfe&opi=89978449&ved=0CBAQjRxqFwoTCPCR_MDkjIQDFQAAAAAdAAAAABAn */
+.input-bar .arrow-bg {
+  --padding-tb: 0.25rem;
+  --padding-lr: 0.5rem;
+  font-size: 16px;
+  padding: var(--padding-tb) var(--padding-lr);
+  background-color: var(--cur-color);
+  color: var(--bg);
+  position: relative;
+  height: max-content;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.input-bar .arrow-bg::after {
+  content: "";
+  /* .5rem leeway in case its too small on some browsers */
+  border-top: calc(var(--padding-tb) + var(--padding-lr) + .5rem) solid transparent;
+  border-bottom: calc(var(--padding-tb) + var(--padding-lr) + .5rem) solid transparent;
+  border-left: calc(var(--padding-tb) + var(--padding-lr) + .5rem) solid var(--cur-color);
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: .5rem;
+  right: 0;
+  transform: translateX(100%) translateY(-50%);
+}
+
+.input-bar .arrow-bg .symbol {
+  position: absolute;
+  top: 50%;
+  right: -0.25rem;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.input-bar label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: var(--white);
+  margin-left: 1.5rem;
+}
+
+.input-bar label span {
+  color: var(--light-blue);
+  display: flex;
+  vertical-align: middle;
+}
+
+.input-bar input {
+  all: unset;
+  width: 100%;
+  background-color: transparent;
+  padding: 0.125rem 0.33rem;
+  cursor: text;
+}
+
+.arrow-bg.bg-accent {
+  --cur-color: var(--bg-accent);
+  padding-left: calc(var(--padding-lr) * 2 + 0.5rem);
+  color: var(--accent);
+}
+
+.arrow-bg.accent {
+  --cur-color: var(--accent);
+  z-index: 1;
+  color: var(--bg-accent);
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--dark);
+}
+
+.open-windows {
+  display: flex;
+  justify-content: left;
+  flex-wrap: nowrap;
+  gap: .25rem;
+}
+
+.window {
+  background-color: var(--bg-dark);
+  padding: 0.125rem 2.5rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.window:hover {
+  filter: brightness(125%);
+}
+
+.window.open {
+  background-color: var(--bg-accent);
+  color: var(--white);
+  font-style: italic;
+  border-left: var(--white) 2px solid;
+}
+
+.window .control-btn {
+  height: 1ch;
+  aspect-ratio: 1/1;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: transparent;
+}
+
+.console .controls {
+  display: flex;
+  justify-content: right;
+}
+
+.control-btn {
+  all: unset;
+  background-color: var(--bg-accent);
+  aspect-ratio: 1/1;
+  height: 1ch;
+  padding: .5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
 }
 
-button:hover {
+.control-btn:hover {
+  filter: brightness(125%);
+}
+
+.console .content {
+  padding: .5rem;
+  max-height: 90%;
+  overflow-y: scroll;
+}
+
+.line.input {
+  color: var(--white);
+}
+
+.tab {
+  content: "";
+  height: 1px;
+  width: 1px;
+  margin: 0 .5rem;
+  color: var(--white);
+  user-select: none;
+}
+
+.spacer {
+  content: "";
+  height: 1px;
+  width: 100%;
+  border-bottom: 1px solid var(--text);
+  margin: .33rem 0;
+}
+
+.new-terminal {
+  all: unset;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  background-color: var(--bg-accent);
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  border: 1px solid var(--white);
+}
+
+.new-terminal:hover {
   filter: brightness(110%);
+}
+
+.loginWrapper {
+  background-color: var(--bg-accent);
+  border: 1px solid var(--white);
+  width: fit-content;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--white);
+  padding: 1.5rem;
+  padding-bottom: .75rem;
+}
+
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+#loginForm label {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  background-color: var(--accent);
+  color: var(--bg-accent);
+  padding-left: .5rem;
+}
+
+#loginForm label input {
+  border-radius: 0;
+  border: 1px solid var(--white);
+  color: var(--white);
+  background-color: var(--bg-dark);
+}
+
+#loginForm label input:focus {
+  outline: 1px solid var(--dark);
+}
+
+.loginBtn {
+  all: unset;
+  margin: 0 auto;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-dark);
+  padding: .25rem .75rem;
+}
+
+.loginBtn:hover {
+  filter: brightness(112.5%);
 }
