@@ -72,24 +72,43 @@ static std::string sanitize(std::string string) {
 	return string;
 }
 
+static void printHelp() {
+	std::cout << "--help " << "               Displays information about the app" << std::endl;
+	std::cout << "--dev " << "                If present, uses dev mode (live reloading)" << std::endl;
+	std::cout << "--staticPath [PATH] " << "  Sets the path to the served static website files" << std::endl;
+	std::cout << "--addr [ADDRES] " << "      Sets the address which the server will try to use" << std::endl;
+	std::cout << "--port [PORT] " << "        Sets the port which the server will try to use" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
 	loadEnv(&ENV);
 	std::string staticPath = "./static";
+	std::string addres = "0.0.0.0";
+	int port = 4003;
 	bool isDevEnv = false;
-
-	for (int i = 0; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--dev") == 0) {
 			isDevEnv = true;
 			http::util::log("Using dev environment");
-		}
-		if (strcmp(argv[i], "--staticPath") == 0 && (i + 1) < argc) {
+		} else if (strcmp(argv[i], "--staticPath") == 0 && (i + 1) < argc) {
 			staticPath = argv[i + 1];
 			i += 1;
 			http::util::log("Changed default path to: " + staticPath);
+		} else if (strcmp(argv[i], "--addr") == 0 && (i + 1) < argc) {
+			addres = argv[i + 1];
+			i += 1;
+			http::util::log("Changed address to " + addres);
+		} else if (strcmp(argv[i], "--port") == 0 && (i + 1) < argc) {
+			port = std::stoi(argv[i + 1]);
+			i += 1;
+			http::util::log("Changed port to " + std::to_string(port));
+		} else {
+			printHelp();
+			return 0;
 		}
 	}
 
-	http::Server srv = http::Server("0.0.0.0", 4003, isDevEnv);
+	http::Server srv = http::Server(addres, port, isDevEnv);
 	srv.setStaticFolderPath(staticPath);
 
 	srv.assign(
