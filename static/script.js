@@ -8,6 +8,7 @@ const contentElm = document.querySelector(".content");
 const terminalIndicatorElm = document.querySelector(".terminal-indicator");
 const inputForm = document.getElementById("input-form");
 const cmdInput = document.getElementById("cmd-input");
+const logoutBtn = document.getElementById("logout");
 
 window.addEventListener("load", async () => {
   const data = await fetchOrigin("/api/getTerminalIDs", {
@@ -37,7 +38,8 @@ window.addEventListener("load", async () => {
     });
   
     const closeBtn = windowElm.querySelector("button");
-    closeBtn.addEventListener("click", async () => {
+    closeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       await fetchOrigin("/api/closeTerminal", {
         method: "POST",
         body: windowElm.getAttribute("data-terminal-id"),
@@ -77,7 +79,9 @@ async function selectTerminal(num, addNewWindowElm) {
   if (addNewWindowElm) {
     openWindowsElm.appendChild(genWindow(num));
   }
+  terminalData.reverse();
   contentElm.replaceChildren(...(genContent(terminalData)));
+  contentElm.scrollTop = contentElm.scrollHeight;
   terminalIndicatorElm.textContent = num;
   CUR_TERM = num;
   [...document.querySelectorAll(".window")].forEach(windowElm => windowElm.classList.remove("open"));
@@ -94,3 +98,10 @@ async function exec(cmd) {
   });
   await selectTerminal(CUR_TERM, false);
 }
+
+logoutBtn.addEventListener("click", async () => {
+  await fetchOrigin("/api/logout", {
+    method: "POST"
+  });
+  window.location.reload();
+});

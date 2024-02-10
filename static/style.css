@@ -39,13 +39,13 @@ body {
 .input-bar {
   background-color: var(--bg-dark);
   display: flex;
+  align-items: stretch;
   overflow: hidden;
   position: absolute;
   width: 100%;
   bottom: 0;
 }
 
-/* https://www.google.com/url?sa=i&url=https%3A%2F%2Flevelup.gitconnected.com%2Fthe-most-requested-neovim-configuration-33a8fc4eed56&psig=AOvVaw0Db6Xx05dEliS2evVK1L2b&ust=1706967444174000&source=images&cd=vfe&opi=89978449&ved=0CBAQjRxqFwoTCPCR_MDkjIQDFQAAAAAdAAAAABAn */
 .input-bar .arrow-bg {
   --padding-tb: 0.25rem;
   --padding-lr: 0.5rem;
@@ -54,8 +54,10 @@ body {
   background-color: var(--cur-color);
   color: var(--bg);
   position: relative;
-  height: max-content;
+  min-height: 100%;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
   user-select: none;
 }
 
@@ -79,26 +81,34 @@ body {
   z-index: 1;
 }
 
+#input-form {
+  width: 100%;
+  padding-left: 1.5rem;
+  display: flex;
+  align-items: stretch;
+  background-color: var(--dark);
+}
+
 .input-bar label {
   width: 100%;
   display: flex;
   align-items: center;
   color: var(--white);
-  margin-left: 1.5rem;
+  align-items: center;
 }
 
 .input-bar label span {
   color: var(--light-blue);
-  display: flex;
-  vertical-align: middle;
 }
 
 .input-bar input {
   all: unset;
   width: 100%;
   background-color: transparent;
-  padding: 0.125rem 0.33rem;
+  margin: 0.33rem 0 0.33rem 0.33rem;
+  padding: 0 0.33rem;
   cursor: text;
+  border-left: 2px solid var(--bg-accent);
 }
 
 .arrow-bg.bg-accent {
@@ -176,7 +186,7 @@ body {
 
 .console .content {
   padding: .5rem;
-  max-height: 90%;
+  max-height: calc(90% - 0.5rem);
   overflow-y: scroll;
 }
 

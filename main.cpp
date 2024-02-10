@@ -19,7 +19,7 @@ struct VerifiedUUID {
 };
 std::vector<VerifiedUUID> uuids{};
 
-std::map<int, std::map<std::string, std::string>> terminals{};
+std::map<int, std::vector<std::pair<std::string, std::string>>> terminals{};
 int terminalCount = 0;
 
 static std::string exec(std::string command) {
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 				res->setStatus(400);
 			} else {
 				std::string out = exec(command);
-				entry->second[command] = out;
+				entry->second.push_back(std::pair(command, out));
 				res->setStatus(200);
 				res->setContent(
 					out,
@@ -180,6 +180,40 @@ int main(int argc, char* argv[]) {
 	);
 
 	srv.assign(
+		"/api/logout",
+		"POST",
+		[](http::Request* req, http::Response* res) {
+			std::string uuid = req->getCookie("id");
+			if (!isAuthorized(uuid)) {
+				res->setStatus(401);
+				res->setContent("Unauthorized", "text/plain");
+				return;
+			}
+			bool removed = false;
+			for (int i = 0; i < uuids.size(); i++) {
+				if (uuids[i].uuid == uuid) {
+					uuids.erase(uuids.begin() + i);
+					removed = true;
+				}
+			}
+			if (removed) {
+				res->setStatus(303);
+				res->setHeader("Location", "/login/");
+				http::Cookie uuidCookie;
+				uuidCookie.name = "id";
+				uuidCookie.value = "";
+				uuidCookie.path = "/";
+				uuidCookie.sameSite = "Strict";
+				uuidCookie.httpOnly = true;
+				uuidCookie.setExpiryTime(3600);
+				res->addCookie(uuidCookie.toString());
+			} else {
+				res->setStatus(500);
+			}
+		}
+	);
+
+	srv.assign(
 		"/api/createTerminal",
 		"POST",
 		[](http::Request* req, http::Response* res) {
@@ -189,7 +223,7 @@ int main(int argc, char* argv[]) {
 				res->setContent("Unauthorized", "text/plain");
 				return;
 			}
-			terminals[terminalCount] = std::map<std::string, std::string>{};
+			terminals[terminalCount] = std::vector<std::pair<std::string, std::string>>{};
 			res->setStatus(200);
 			res->setContent(std::to_string(terminalCount), "text/plain");
 			terminalCount += 1;
@@ -230,9 +264,9 @@ int main(int argc, char* argv[]) {
 			} else {
 				std::ostringstream out;
 				out << "[";
-				for (auto const& cmdEntry : entry->second) {
-					std::string cmdOut = sanitize(cmdEntry.second);
-					out << "[\"" << cmdEntry.first << "\", ";
+				for (auto const& inputPair : entry->second) {
+					std::string cmdOut = sanitize(inputPair.second);
+					out << "[\"" << inputPair.first << "\", ";
 					out << "\"" << cmdOut << "\"" << "], ";
 				}
 				out << "]";
@@ -272,7 +306,7 @@ int main(int argc, char* argv[]) {
 			res->setContent(outString, "application/json");
 		}
 	);
-	
+
 	srv.addIntercept(
 		"/",
 		"GET",

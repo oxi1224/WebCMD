@@ -14,7 +14,7 @@ export function genWindow(num) {
     "http://www.w3.org/2000/svg",
     "use"
   );
-  svgUse.setAttribute("xlink:href", "./assets/svg/cross.svg#cross");
+  svgUse.setAttribute("href", "./assets/svg/cross.svg#cross");
   svg.appendChild(svgUse);
   button.appendChild(svg);
   mainDiv.appendChild(button);

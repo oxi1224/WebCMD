@@ -24,9 +24,9 @@ namespace http {
 	}
 
 	std::string toString() const {
-		if (name.empty() || value.empty()) {
-			std::cerr << "Cookie name or value is empty" << std::endl;
-			throw std::runtime_error("Cookie name or value is empty");
+		if (name.empty()) {
+			std::cerr << "Cookie name is empty" << std::endl;
+			throw std::runtime_error("Cookie name is empty");
 		}
 		std::ostringstream out;
 		out << name << "=" << value;
