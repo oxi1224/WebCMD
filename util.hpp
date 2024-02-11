@@ -2,8 +2,8 @@
 #define UTIL_HPP
 
 namespace Util {
-	void loadEnv(std::map<std::string, std::string>* map) {
-		std::ifstream env(".env");
+	void loadEnv(std::string path, std::map<std::string, std::string>* map) {
+		std::ifstream env(path);
 		if (!env.is_open()) {
 			std::cerr << "Failed to load .env file" << std::endl;
 			return;

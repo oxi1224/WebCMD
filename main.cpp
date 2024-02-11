@@ -75,16 +75,17 @@ static std::string sanitize(std::string string) {
 static void printHelp() {
 	std::cout << "--help " << "               Displays information about the app" << std::endl;
 	std::cout << "--dev " << "                If present, uses dev mode (live reloading)" << std::endl;
-	std::cout << "--staticPath [PATH] " << "  Sets the path to the served static website files" << std::endl;
-	std::cout << "--addr [ADDRES] " << "      Sets the address which the server will try to use" << std::endl;
-	std::cout << "--port [PORT] " << "        Sets the port which the server will try to use" << std::endl;
+	std::cout << "--staticPath [PATH] " << "  Sets the path to the served static website files (default: ./server)" << std::endl;
+	std::cout << "--envPath [PATH] " << "			Sets the path to the .env file (default: ./.env)" << std::endl;
+	std::cout << "--addr [ADDRES] " << "      Sets the address which the server will try to use (default: 0.0.0.0)" << std::endl;
+	std::cout << "--port [PORT] " << "        Sets the port which the server will try to use (default: 4000)" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-	loadEnv(&ENV);
+	std::string envPath = "./.env";
 	std::string staticPath = "./static";
 	std::string addres = "0.0.0.0";
-	int port = 4003;
+	int port = 4000;
 	bool isDevEnv = false;
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--dev") == 0) {
@@ -93,7 +94,11 @@ int main(int argc, char* argv[]) {
 		} else if (strcmp(argv[i], "--staticPath") == 0 && (i + 1) < argc) {
 			staticPath = argv[i + 1];
 			i += 1;
-			http::util::log("Changed default path to: " + staticPath);
+			http::util::log("Changed static folder path to: " + staticPath);
+		} else if (strcmp(argv[i], "--envPath") == 0 && (i + 1) < argc) {
+			envPath = argv[i + 1];
+			i += 1;
+			http::util::log("Changed .env file path to: " + envPath);
 		} else if (strcmp(argv[i], "--addr") == 0 && (i + 1) < argc) {
 			addres = argv[i + 1];
 			i += 1;
@@ -108,6 +113,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	loadEnv(envPath, &ENV);
 	http::Server srv = http::Server(addres, port, isDevEnv);
 	srv.setStaticFolderPath(staticPath);
 
