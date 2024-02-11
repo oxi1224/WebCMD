@@ -1,4 +1,3 @@
-rmdir release /S /Q
 mkdir release
 xcopy "static" "release/static" /E /I /Y
 copy ".env.exmpl" "release/.env"
@@ -7,3 +6,4 @@ cd "release"
 tar.exe -acvf WebCMD.zip  --exclude=*.zip *
 cd ".."
 move "release\WebCMD.zip" "./"
+rmdir release /S /Q
